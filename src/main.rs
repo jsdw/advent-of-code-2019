@@ -5,6 +5,8 @@ use error::Error;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
+/// A table-of-contents of the subcommands and their
+/// arguments for this program.
 #[derive(Debug, StructOpt)]
 #[structopt(name = "aoc2019", about = "AoC2019 solutions")]
 enum Day {
@@ -14,12 +16,8 @@ enum Day {
     }
 }
 
-fn main() {
-    if let Err(e) = day(Day::from_args()) {
-        eprintln!("{}", e);
-    }
-}
-
+/// Act on the subcommands and such provided using
+/// the `Day` enum.
 fn day(day: Day) -> Result<(),Error> {
     use self::Day::*;
     match day {
@@ -32,6 +30,15 @@ fn day(day: Day) -> Result<(),Error> {
     Ok(())
 }
 
+/// Parse the arguments, run the relevant code and
+/// print any errors to stderr.
+fn main() {
+    if let Err(e) = day(Day::from_args()) {
+        eprintln!("{}", e);
+    }
+}
+
+/// A convenience function to read from a file.
 fn read(path: PathBuf) -> Result<String,Error> {
     use std::io::Read;
     let mut file = std::fs::File::open(path)?;
