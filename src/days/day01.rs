@@ -9,7 +9,7 @@ pub fn part1(input: &str) -> Result<(),Error> {
 
 pub fn part2(input: &str) -> Result<(),Error> {
     let masses = parse_masses(input)?;
-    let mut sum_fuel_reqs: i64 = masses.into_iter().map(recursive_fuel_req).sum();
+    let sum_fuel_reqs: i64 = masses.into_iter().map(recursive_fuel_req).sum();
     println!("Recursive sum of fuel required: {}", sum_fuel_reqs);
     Ok(())
 }

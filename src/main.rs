@@ -40,9 +40,5 @@ fn main() {
 
 /// A convenience function to read from a file.
 fn read(path: PathBuf) -> Result<String,Error> {
-    use std::io::Read;
-    let mut file = std::fs::File::open(path)?;
-    let mut contents = String::new();
-    file.read_to_string(&mut contents)?;
-    Ok(contents)
+    Ok(std::fs::read_to_string(path)?)
 }
