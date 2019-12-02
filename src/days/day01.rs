@@ -3,14 +3,14 @@ use crate::error::Error;
 pub fn part1(input: &str) -> Result<(),Error> {
     let masses = parse_masses(input)?;
     let sum_fuel_reqs: i64 = masses.into_iter().map(fuel_req).sum();
-    println!("Sum of fuel required: {}", sum_fuel_reqs);
+    println!("Star 1: {}", sum_fuel_reqs);
     Ok(())
 }
 
 pub fn part2(input: &str) -> Result<(),Error> {
     let masses = parse_masses(input)?;
     let sum_fuel_reqs: i64 = masses.into_iter().map(recursive_fuel_req).sum();
-    println!("Recursive sum of fuel required: {}", sum_fuel_reqs);
+    println!("Star 2: {}", sum_fuel_reqs);
     Ok(())
 }
 

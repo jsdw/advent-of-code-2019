@@ -10,10 +10,15 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 #[structopt(name = "aoc2019", about = "AoC2019 solutions")]
 enum Day {
-    Day1 {
-        #[structopt(name = "FILE", parse(from_os_str))]
-        input: PathBuf,
-    }
+    Day1(FileInput),
+    Day2(FileInput)
+}
+
+/// Days that take a file as input take one input arg:
+#[derive(Debug, StructOpt)]
+struct FileInput {
+    #[structopt(name = "FILE", parse(from_os_str))]
+    input: PathBuf,
 }
 
 /// Act on the subcommands and such provided using
@@ -21,11 +26,16 @@ enum Day {
 fn day(day: Day) -> Result<(),Error> {
     use self::Day::*;
     match day {
-        Day1 { input } => {
+        Day1(FileInput { input }) => {
             let s = read(input)?;
             days::day01::part1(&s)?;
             days::day01::part2(&s)?;
-        }
+        },
+        Day2(FileInput { input }) => {
+            let s = read(input)?;
+            days::day02::part1(&s)?;
+            days::day02::part2(&s)?;
+        },
     };
     Ok(())
 }
