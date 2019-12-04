@@ -12,7 +12,13 @@ use structopt::StructOpt;
 enum Day {
     Day1(FileInput),
     Day2(FileInput),
-    Day3(FileInput)
+    Day3(FileInput),
+    Day4 {
+        #[structopt(help = "The first number in the range")]
+        low: usize,
+        #[structopt(help = "The last number in the range")]
+        high: usize
+    }
 }
 
 /// Days that take a file as input take one input arg:
@@ -42,6 +48,10 @@ fn day(day: Day) -> Result<(),Error> {
             days::day03::part1(&s)?;
             days::day03::part2(&s)?;
         },
+        Day4 { low, high } => {
+            days::day04::part1(low, high)?;
+            days::day04::part2(low, high)?;
+        }
     };
     Ok(())
 }
