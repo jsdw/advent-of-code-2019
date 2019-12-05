@@ -18,7 +18,8 @@ enum Day {
         low: usize,
         #[structopt(help = "The last number in the range")]
         high: usize
-    }
+    },
+    Day5(FileInput)
 }
 
 /// Days that take a file as input take one input arg:
@@ -51,6 +52,11 @@ fn day(day: Day) -> Result<(),Error> {
         Day4 { low, high } => {
             days::day04::part1(low, high)?;
             days::day04::part2(low, high)?;
+        },
+        Day5(FileInput { input }) => {
+            let s = read(input)?;
+            days::day05::part1(&s)?;
+            days::day05::part2(&s)?;
         }
     };
     Ok(())

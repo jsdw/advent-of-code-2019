@@ -1,5 +1,6 @@
 use itertools::Itertools;
 use crate::error::Error;
+use crate::utils::digits;
 
 pub fn part1(low: usize, high: usize) -> Result<(),Error> {
     let valid_count = (low..=high).filter(|&n| part1_test(n)).count();
@@ -59,16 +60,4 @@ fn part2_test(n: usize) -> bool {
         return false
     }
     true
-}
-
-fn digits(mut n: usize) -> impl Iterator<Item = u8> {
-    std::iter::from_fn(move || {
-        if n == 0 {
-            None
-        } else {
-            let out = n % 10;
-            n = n / 10;
-            Some(out as u8)
-        }
-    })
 }
