@@ -1,6 +1,19 @@
 use crate::error::Error;
 use self::instruction::{ Instruction, VarType };
 
+pub fn parse_intcode_ops(input: &str) -> Result<Vec<i64>,Error> {
+    let mut ns = vec![];
+    for (idx,s) in input.split(",").enumerate() {
+        let n = s
+            .trim()
+            .parse()
+            .map_err(|_| err!("Cannot parse intcode string op {} ('{}') into an integer", idx+1, s))?;
+        ns.push(n)
+    }
+    Ok(ns)
+}
+
+#[derive(Clone)]
 pub struct Intcode {
     position: usize,
     ops: Vec<i64>
@@ -40,9 +53,12 @@ impl Intcode {
             },
             Instruction::Input(c) => {
                 let c = self.try_get_pos(c, pos+1)?;
-                self.position += 2;
+                // Computation is essentially suspended until
+                // this input provider is given input. If it's dropped
+                // without being given input, we'll be given another
+                // one on the next step to ask again.
                 Ok(Some(Outcome::NeedsInput(ProvideInput {
-                    ops: &mut self.ops,
+                    intcode: self,
                     pos: c
                 })))
             },
@@ -115,12 +131,15 @@ pub enum Outcome<'a> {
 /// Sometimes the interpreter will ask for input. It can
 /// be provided via this.
 pub struct ProvideInput<'a> {
-    ops: &'a mut Vec<i64>,
+    intcode: &'a mut Intcode,
     pos: usize
 }
 impl <'a> ProvideInput<'a> {
     pub fn provide(self, value: i64) {
-        self.ops[self.pos] = value;
+        // Assign the value we asked for:
+        self.intcode.ops[self.pos] = value;
+        // Finally, progress to the next instruction:
+        self.intcode.position += 2;
     }
 }
 
