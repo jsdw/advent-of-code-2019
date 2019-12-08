@@ -12,7 +12,8 @@ pub fn part2(input: &str) -> Result<(),Error> {
     let ops = parse_input(input)?;
     let intcode = Intcode::new(ops);
     println!("Star 2: {}", run_intcode_with_input(intcode, 5)?);
-    Ok(())}
+    Ok(())
+}
 
 fn run_intcode_with_input(mut intcode: Intcode, input: i64) -> Result<i64,Error> {
     let mut output: i64 = 0;
