@@ -61,7 +61,7 @@ fn get_distance_to_santa(object_orbits: &HashMap<String,String>) -> usize {
 /// Naively count all orbits from every object to get a total
 fn get_orbit_counts(object_orbits: &HashMap<String,String>) -> usize {
     let mut count = 0;
-    for (object, orbiting) in object_orbits {
+    for object in object_orbits.keys() {
         count += iterate_orbits(object, object_orbits).count()
     }
     count

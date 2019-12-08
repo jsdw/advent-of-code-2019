@@ -1,6 +1,6 @@
 use itertools::Itertools;
 use crate::error::Error;
-use crate::utils::digits;
+use crate::support::digits;
 
 pub fn part1(low: usize, high: usize) -> Result<(),Error> {
     let valid_count = (low..=high).filter(|&n| part1_test(n)).count();

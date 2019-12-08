@@ -1,6 +1,6 @@
 #[macro_use] mod error;
 mod days;
-mod utils;
+mod support;
 
 use error::Error;
 use std::path::PathBuf;
