@@ -34,32 +34,10 @@ fn run_amplifiers_repeatedly_with_input(inputs: Vec<i64>, intcode: &Intcode) -> 
 
     // Each of these is a function that takes amplifier input in and returns
     // an output, or nothing if the intcode machine has halted.
-    let mut intcode_funcs: Vec<_> = inputs.into_iter().map(|first_input| {
-        let mut intcode = intcode.clone();
-        let mut has_used_first_input = false;
-        move |next_input: i64| -> Result<Option<i64>,Error> {
-            while let Some(outcome) = intcode.step()? {
-                match outcome {
-                    Outcome::NeedsInput(provider) => {
-                        if !has_used_first_input {
-                            provider.provide(first_input);
-                            has_used_first_input = true;
-                        } else {
-                            provider.provide(next_input);
-                        }
-                    },
-                    Outcome::Output(value) => {
-                        return Ok(Some(value));
-                    },
-                    Outcome::StepComplete => {
-                        /* keep calm and carry on */
-                    }
-                }
-            }
-            // Halted; no more value to give.
-            Ok(None)
-        }
-    }).collect();
+    let mut intcode_funcs: Vec<_> = inputs
+        .into_iter()
+        .map(|first_input| intcode_fn(intcode, first_input))
+        .collect();
 
     // Run these repeatedly until they halt
     let mut next_input = 0;
@@ -75,4 +53,33 @@ fn run_amplifiers_repeatedly_with_input(inputs: Vec<i64>, intcode: &Intcode) -> 
     // Return the last input we got out before everything halts
     // (This seems to suffice)
     Ok(next_input)
+}
+
+/// Turn an intcode tempalte into a function which takes inputs and
+/// returns outputs, progressing the intcode machine each time it runs.
+fn intcode_fn(intcode: &Intcode, first_input: i64) -> impl FnMut(i64) -> Result<Option<i64>,Error> {
+    let mut intcode = intcode.clone();
+    let mut has_used_first_input = false;
+    move |next_input: i64| -> Result<Option<i64>,Error> {
+        while let Some(outcome) = intcode.step()? {
+            match outcome {
+                Outcome::NeedsInput(provider) => {
+                    if !has_used_first_input {
+                        provider.provide(first_input);
+                        has_used_first_input = true;
+                    } else {
+                        provider.provide(next_input);
+                    }
+                },
+                Outcome::Output(value) => {
+                    return Ok(Some(value));
+                },
+                Outcome::StepComplete => {
+                    /* keep calm and carry on */
+                }
+            }
+        }
+        // Halted; no more value to give.
+        Ok(None)
+    }
 }
