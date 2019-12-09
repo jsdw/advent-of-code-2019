@@ -21,9 +21,6 @@ pub fn run_with_input(ops: &str, input: i64) -> Result<i64, Error> {
             },
             Outcome::Output(val) => {
                 return Ok(val)
-            },
-            Outcome::StepComplete => {
-                /* All gravy */
             }
         }
     }
@@ -62,11 +59,8 @@ mod test {
         let mut intcode = Intcode::new(ops);
         let mut out = vec![];
         while let Some(outcome) = intcode.step()? {
-            match outcome {
-                Outcome::Output(val) => { out.push(val); },
-                Outcome::StepComplete => { /* Do nout */ },
-                _ => { panic!("Unexpected op"); }
-            }
+            if let Outcome::Output(val) = outcome { out.push(val); }
+            else { panic!("Unexpected op"); }
         }
         Ok(out)
     }

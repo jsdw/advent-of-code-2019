@@ -29,89 +29,83 @@ impl Intcode {
         self.ops.get(pos)
     }
     pub fn step(&mut self) -> Result<Option<Outcome>,Error> {
-        let pos = self.position;
-        let instr = Instruction::new(self.ops.get(pos) as usize);
+        loop {
+            let pos = self.position;
+            let instr = Instruction::new(self.ops.get(pos) as usize);
 
-        match instr {
-            Instruction::Add(c,b,a) => {
-                let c = self.get_value(c,1);
-                let b = self.get_value(b,2);
-                let a = self.get_pos(a,3);
-                self.ops.set(a, b + c);
-                self.position += 4;
-                Ok(Some(Outcome::StepComplete))
-            },
-            Instruction::Mul(c,b,a) => {
-                let c = self.get_value(c,1);
-                let b = self.get_value(b,2);
-                let a = self.get_pos(a,3);
-                self.ops.set(a, b * c);
-                self.position += 4;
-                Ok(Some(Outcome::StepComplete))
-            },
-            Instruction::Input(c) => {
-                let c = self.get_pos(c,1);
-                // Computation is essentially suspended until
-                // this input provider is given input. If it's dropped
-                // without being given input, we'll be given another
-                // one on the next step to ask again.
-                Ok(Some(Outcome::NeedsInput(ProvideInput {
-                    intcode: self,
-                    pos: c
-                })))
-            },
-            Instruction::Output(c) => {
-                let c = self.get_value(c,1);
-                self.position += 2;
-                Ok(Some(Outcome::Output(c)))
-            },
-            Instruction::JumpIfTrue(c,b) => {
-                let c = self.get_value(c,1);
-                if c != 0 {
+            match instr {
+                Instruction::Add(c,b,a) => {
+                    let c = self.get_value(c,1);
                     let b = self.get_value(b,2);
-                    self.position = b as usize;
-                } else {
-                    self.position += 3;
-                }
-                Ok(Some(Outcome::StepComplete))
-            },
-            Instruction::JumpIfFalse(c,b) => {
-                let c = self.get_value(c,1);
-                if c == 0 {
+                    let a = self.get_pos(a,3);
+                    self.ops.set(a, b + c);
+                    self.position += 4;
+                },
+                Instruction::Mul(c,b,a) => {
+                    let c = self.get_value(c,1);
                     let b = self.get_value(b,2);
-                    self.position = b as usize;
-                } else {
-                    self.position += 3;
+                    let a = self.get_pos(a,3);
+                    self.ops.set(a, b * c);
+                    self.position += 4;
+                },
+                Instruction::Input(c) => {
+                    let c = self.get_pos(c,1);
+                    // Computation is essentially suspended until
+                    // this input provider is given input. If it's dropped
+                    // without being given input, we'll be given another
+                    // one on the next step to ask again.
+                    break Ok(Some(Outcome::NeedsInput(ProvideInput {
+                        intcode: self,
+                        pos: c
+                    })))
+                },
+                Instruction::Output(c) => {
+                    let c = self.get_value(c,1);
+                    self.position += 2;
+                    break Ok(Some(Outcome::Output(c)))
+                },
+                Instruction::JumpIfTrue(c,b) => {
+                    let c = self.get_value(c,1);
+                    if c != 0 {
+                        let b = self.get_value(b,2);
+                        self.position = b as usize;
+                    } else {
+                        self.position += 3;
+                    }
+                },
+                Instruction::JumpIfFalse(c,b) => {
+                    let c = self.get_value(c,1);
+                    if c == 0 {
+                        let b = self.get_value(b,2);
+                        self.position = b as usize;
+                    } else {
+                        self.position += 3;
+                    }
+                },
+                Instruction::LessThan(c,b,a) => {
+                    let c = self.get_value(c,1);
+                    let b = self.get_value(b,2);
+                    let a = self.get_pos(a,3);
+                    self.ops.set(a, if c < b { 1 } else { 0 });
+                    self.position += 4;
+                },
+                Instruction::Equals(c,b,a) => {
+                    let c = self.get_value(c,1);
+                    let b = self.get_value(b,2);
+                    let a = self.get_pos(a,3);
+                    self.ops.set(a, if c == b { 1 } else { 0 });
+                    self.position += 4;
+                },
+                Instruction::AdjustRelativeBase(c) => {
+                    let c = self.get_value(c,1);
+                    self.relative_base += c;
+                    self.position += 2;
                 }
-                Ok(Some(Outcome::StepComplete))
-            },
-            Instruction::LessThan(c,b,a) => {
-                let c = self.get_value(c,1);
-                let b = self.get_value(b,2);
-                let a = self.get_pos(a,3);
-                self.ops.set(a, if c < b { 1 } else { 0 });
-                self.position += 4;
-                Ok(Some(Outcome::StepComplete))
-            },
-            Instruction::Equals(c,b,a) => {
-                let c = self.get_value(c,1);
-                let b = self.get_value(b,2);
-                let a = self.get_pos(a,3);
-                self.ops.set(a, if c == b { 1 } else { 0 });
-                self.position += 4;
-                Ok(Some(Outcome::StepComplete))
-            },
-            Instruction::AdjustRelativeBase(c) => {
-                let c = self.get_value(c,1);
-                self.relative_base += c;
-                self.position += 2;
-                Ok(Some(Outcome::StepComplete))
-            }
-            Instruction::Finish => {
-                Ok(None)
+                Instruction::Finish => {
+                    break Ok(None)
+                }
             }
         }
-
     }
     fn get_pos(&self, ty: VarType, offset: usize) -> usize {
         let position = self.position + offset;
@@ -128,10 +122,9 @@ impl Intcode {
 }
 
 /// An outcome as a result of running a step of the Intcode
-/// interpreter. No outcome is returned if the interpreter
-/// is finished.
+/// interpreter. We stop because we either need input or
+/// have something to output.
 pub enum Outcome<'a> {
-    StepComplete,
     NeedsInput(ProvideInput<'a>),
     Output(i64)
 }

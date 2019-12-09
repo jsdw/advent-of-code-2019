@@ -19,9 +19,6 @@ fn run_intcode_with_input(mut intcode: Intcode, input: i64) -> Result<i64,Error>
     let mut output: i64 = 0;
     while let Some(outcome) = intcode.step()? {
         match outcome {
-            Outcome::StepComplete => {
-                /* Nothing to do */
-            },
             Outcome::NeedsInput(inputter) => {
                 inputter.provide(input);
             },

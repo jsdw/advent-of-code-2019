@@ -72,9 +72,6 @@ fn intcode_fn(mut intcode: Intcode, first_input: i64) -> impl FnMut(i64) -> Resu
                 },
                 Outcome::Output(value) => {
                     return Ok(Some(value));
-                },
-                Outcome::StepComplete => {
-                    /* keep calm and carry on */
                 }
             }
         }

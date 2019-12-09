@@ -1,5 +1,5 @@
 use crate::error::Error;
-use crate::support::intcode::{ Intcode, Outcome, parse_intcode_ops };
+use crate::support::intcode::{ Intcode, parse_intcode_ops };
 
 pub fn part1(input: &str) -> Result<(),Error> {
     let mut ops = parse_intcode_ops(input)?;
@@ -34,14 +34,9 @@ fn run_programs(ops: Vec<i64>, answer: i64) -> Result<(i64,i64),Error> {
 }
 
 fn run_program(ops: Vec<i64>) -> Result<i64,Error> {
-
     let mut intcode = Intcode::new(ops);
-    while let Some(outcome) = intcode.step()? {
-        if let Outcome::StepComplete = outcome {
-            /* Do nothing; just carry on! */
-        } else {
-            panic!("Unexpected input: cannot handle")
-        }
+    if intcode.step()?.is_some() {
+        panic!("Unexpected instruction: cannot handle")
     }
     Ok(intcode.get_op(0))
 }
