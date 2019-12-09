@@ -55,7 +55,7 @@ fn run_amplifiers_repeatedly_with_input(inputs: Vec<i64>, intcode: &Intcode) -> 
     Ok(next_input)
 }
 
-/// Turn an intcode tempalte into a function which takes inputs and
+/// Turn an intcode template into a function which takes inputs and
 /// returns outputs, progressing the intcode machine each time it runs.
 fn intcode_fn(mut intcode: Intcode, first_input: i64) -> impl FnMut(i64) -> Result<Option<i64>,Error> {
     let mut has_used_first_input = false;
