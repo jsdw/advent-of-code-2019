@@ -23,6 +23,14 @@ enum Day {
     Day5(FileInput),
     Day6(FileInput),
     Day7(FileInput),
+    Day8 {
+        #[structopt(name = "FILE", parse(from_os_str))]
+        input: PathBuf,
+        #[structopt(long, default_value = "25", help = "The image width")]
+        image_width: usize,
+        #[structopt(long, default_value = "6",  help = "The image height")]
+        image_height: usize
+    }
 }
 
 /// Days that take a file as input take one input arg:
@@ -69,6 +77,11 @@ fn day(day: Day) -> Result<(),Error> {
             let s = read(input)?;
             days::day07::both_parts(&s)?;
         },
+        Day8 { input, image_width, image_height } => {
+            let s = read(input)?;
+            days::day08::part1(&s, image_width, image_height)?;
+            days::day08::part2(&s, image_width, image_height)?;
+        }
     };
     Ok(())
 }
