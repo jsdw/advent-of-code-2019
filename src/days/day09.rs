@@ -2,41 +2,32 @@ use crate::error::Error;
 use crate::support::intcode::{ parse_intcode_ops, Intcode, Outcome };
 
 pub fn part1(input: &str) -> Result<(), Error> {
-    let ops = parse_intcode_ops(input)?;
-    let mut intcode = Intcode::new(ops);
-    while let Some(outcome) = intcode.step()? {
-        match outcome {
-            Outcome::NeedsInput(provider) => {
-                provider.provide(1);
-            },
-            Outcome::Output(val) => {
-                println!("Star 1: {}", val);
-            },
-            Outcome::StepComplete => {
-                /* All gravy */
-            }
-        }
-    }
+    println!("Star 1: {}", run_with_input(input, 1)?);
     Ok(())
 }
 
 pub fn part2(input: &str) -> Result<(), Error> {
-    let ops = parse_intcode_ops(input)?;
+    println!("Star 2: {}", run_with_input(input, 2)?);
+    Ok(())
+}
+
+pub fn run_with_input(ops: &str, input: i64) -> Result<i64, Error> {
+    let ops = parse_intcode_ops(ops)?;
     let mut intcode = Intcode::new(ops);
     while let Some(outcome) = intcode.step()? {
         match outcome {
             Outcome::NeedsInput(provider) => {
-                provider.provide(2);
+                provider.provide(input);
             },
             Outcome::Output(val) => {
-                println!("Star 2: {}", val);
+                return Ok(val)
             },
             Outcome::StepComplete => {
                 /* All gravy */
             }
         }
     }
-    Ok(())
+    Err(err!("Expected an output but program finished first"))
 }
 
 #[cfg(test)]
