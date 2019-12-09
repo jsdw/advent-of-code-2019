@@ -36,7 +36,7 @@ fn run_amplifiers_repeatedly_with_input(inputs: Vec<i64>, intcode: &Intcode) -> 
     // an output, or nothing if the intcode machine has halted.
     let mut intcode_funcs: Vec<_> = inputs
         .into_iter()
-        .map(|first_input| intcode_fn(intcode, first_input))
+        .map(|first_input| intcode_fn(intcode.clone(), first_input))
         .collect();
 
     // Run these repeatedly until they halt
@@ -57,8 +57,7 @@ fn run_amplifiers_repeatedly_with_input(inputs: Vec<i64>, intcode: &Intcode) -> 
 
 /// Turn an intcode tempalte into a function which takes inputs and
 /// returns outputs, progressing the intcode machine each time it runs.
-fn intcode_fn(intcode: &Intcode, first_input: i64) -> impl FnMut(i64) -> Result<Option<i64>,Error> {
-    let mut intcode = intcode.clone();
+fn intcode_fn(mut intcode: Intcode, first_input: i64) -> impl FnMut(i64) -> Result<Option<i64>,Error> {
     let mut has_used_first_input = false;
     move |next_input: i64| -> Result<Option<i64>,Error> {
         while let Some(outcome) = intcode.step()? {
