@@ -43,5 +43,5 @@ fn run_program(ops: Vec<i64>) -> Result<i64,Error> {
             panic!("Unexpected input: cannot handle")
         }
     }
-    Ok(intcode.ops()[0])
+    Ok(intcode.get_op(0))
 }

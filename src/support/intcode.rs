@@ -1,5 +1,6 @@
 use crate::error::Error;
 use self::instruction::{ Instruction, VarType };
+use self::ops::Ops;
 
 pub fn parse_intcode_ops(input: &str) -> Result<Vec<i64>,Error> {
     let mut ns = vec![];
@@ -16,43 +17,40 @@ pub fn parse_intcode_ops(input: &str) -> Result<Vec<i64>,Error> {
 #[derive(Clone)]
 pub struct Intcode {
     position: usize,
-    ops: Vec<i64>
+    relative_base: i64,
+    ops: Ops
 }
 
 impl Intcode {
     pub fn new(ops: Vec<i64>) -> Intcode {
-        Intcode { position: 0, ops }
+        Intcode { position: 0, relative_base: 0, ops: Ops::new(ops) }
     }
-    pub fn ops(&self) -> &[i64] {
-        &self.ops
+    pub fn get_op(&self, pos: usize) -> i64 {
+        self.ops.get(pos)
     }
     pub fn step(&mut self) -> Result<Option<Outcome>,Error> {
         let pos = self.position;
-        let instr = if let Some(&op_value) = self.ops.get(pos) {
-            Instruction::new(op_value as usize)
-        } else {
-            return Err(err!("Out of bound access of position {}", pos));
-        };
+        let instr = Instruction::new(self.ops.get(pos) as usize);
 
         match instr {
             Instruction::Add(c,b,a) => {
-                let c = self.try_get_value(c,1)?;
-                let b = self.try_get_value(b,2)?;
-                let a = self.try_get_pos(a,3)?;
-                self.ops[a] = b + c;
+                let c = self.get_value(c,1);
+                let b = self.get_value(b,2);
+                let a = self.get_pos(a,3);
+                self.ops.set(a, b + c);
                 self.position += 4;
                 Ok(Some(Outcome::StepComplete))
             },
             Instruction::Mul(c,b,a) => {
-                let c = self.try_get_value(c,1)?;
-                let b = self.try_get_value(b,2)?;
-                let a = self.try_get_pos(a,3)?;
-                self.ops[a] = b * c;
+                let c = self.get_value(c,1);
+                let b = self.get_value(b,2);
+                let a = self.get_pos(a,3);
+                self.ops.set(a, b * c);
                 self.position += 4;
                 Ok(Some(Outcome::StepComplete))
             },
             Instruction::Input(c) => {
-                let c = self.try_get_pos(c,1)?;
+                let c = self.get_pos(c,1);
                 // Computation is essentially suspended until
                 // this input provider is given input. If it's dropped
                 // without being given input, we'll be given another
@@ -63,14 +61,14 @@ impl Intcode {
                 })))
             },
             Instruction::Output(c) => {
-                let c = self.try_get_value(c,1)?;
+                let c = self.get_value(c,1);
                 self.position += 2;
                 Ok(Some(Outcome::Output(c)))
             },
             Instruction::JumpIfTrue(c,b) => {
-                let c = self.try_get_value(c,1)?;
+                let c = self.get_value(c,1);
                 if c != 0 {
-                    let b = self.try_get_value(b,2)?;
+                    let b = self.get_value(b,2);
                     self.position = b as usize;
                 } else {
                     self.position += 3;
@@ -78,9 +76,9 @@ impl Intcode {
                 Ok(Some(Outcome::StepComplete))
             },
             Instruction::JumpIfFalse(c,b) => {
-                let c = self.try_get_value(c,1)?;
+                let c = self.get_value(c,1);
                 if c == 0 {
-                    let b = self.try_get_value(b,2)?;
+                    let b = self.get_value(b,2);
                     self.position = b as usize;
                 } else {
                     self.position += 3;
@@ -88,36 +86,44 @@ impl Intcode {
                 Ok(Some(Outcome::StepComplete))
             },
             Instruction::LessThan(c,b,a) => {
-                let c = self.try_get_value(c,1)?;
-                let b = self.try_get_value(b,2)?;
-                let a = self.try_get_pos(a,3)?;
-                self.ops[a] = if c < b { 1 } else { 0 };
+                let c = self.get_value(c,1);
+                let b = self.get_value(b,2);
+                let a = self.get_pos(a,3);
+                self.ops.set(a, if c < b { 1 } else { 0 });
                 self.position += 4;
                 Ok(Some(Outcome::StepComplete))
             },
             Instruction::Equals(c,b,a) => {
-                let c = self.try_get_value(c,1)?;
-                let b = self.try_get_value(b,2)?;
-                let a = self.try_get_pos(a,3)?;
-                self.ops[a] = if c == b { 1 } else { 0 };
+                let c = self.get_value(c,1);
+                let b = self.get_value(b,2);
+                let a = self.get_pos(a,3);
+                self.ops.set(a, if c == b { 1 } else { 0 });
                 self.position += 4;
                 Ok(Some(Outcome::StepComplete))
             },
+            Instruction::AdjustRelativeBase(c) => {
+                let c = self.get_value(c,1);
+                self.relative_base += c;
+                self.position += 2;
+                Ok(Some(Outcome::StepComplete))
+            }
             Instruction::Finish => {
                 Ok(None)
             }
         }
 
     }
-    fn try_get_pos(&self, ty: VarType, offset: usize) -> Result<usize,Error> {
-        let pos = self.position + offset;
-        ty.get_pos(&self.ops, pos)
-            .ok_or_else(|| err!("can't get value at index {} in ops", pos))
+    fn get_pos(&self, ty: VarType, offset: usize) -> usize {
+        let position = self.position + offset;
+        match ty {
+            VarType::Position => self.ops.get(position) as usize,
+            VarType::Immediate => position,
+            VarType::Relative => (self.ops.get(position) + self.relative_base) as usize
+        }
     }
-    fn try_get_value(&self, ty: VarType, offset: usize) -> Result<i64,Error> {
-        let pos = self.position + offset;
-        ty.get_value(&self.ops, pos)
-            .ok_or_else(|| err!("can't get value at index {} in ops", pos))
+    fn get_value(&self, ty: VarType, offset: usize) -> i64 {
+        let pos = self.get_pos(ty, offset);
+        self.ops.get(pos)
     }
 }
 
@@ -139,10 +145,35 @@ pub struct ProvideInput<'a> {
 impl <'a> ProvideInput<'a> {
     pub fn provide(self, value: i64) {
         // Assign the value we asked for:
-        self.intcode.ops[self.pos] = value;
+        self.intcode.ops.set(self.pos, value);
         // Finally, progress to the next instruction:
         self.intcode.position += 2;
     }
+}
+
+/// Storage for ops that grows as necessary.
+mod ops {
+
+    #[derive(Clone)]
+    pub struct Ops {
+        ops: Vec<i64>
+    }
+
+    impl Ops {
+        pub fn new(ops: Vec<i64>) -> Ops {
+            Ops { ops }
+        }
+        pub fn get(&self, pos: usize) -> i64 {
+            self.ops.get(pos).map(|p| *p).unwrap_or(0)
+        }
+        pub fn set(&mut self, pos: usize, value: i64) {
+            if pos >= self.ops.len() {
+                self.ops.resize(pos + 1, 0);
+            }
+            self.ops[pos] = value;
+        }
+    }
+
 }
 
 /// This module contains code for parsing the instruction
@@ -159,6 +190,7 @@ mod instruction {
         JumpIfFalse(VarType,VarType),
         LessThan(VarType,VarType,VarType),
         Equals(VarType,VarType,VarType),
+        AdjustRelativeBase(VarType),
         Finish
     }
 
@@ -177,6 +209,7 @@ mod instruction {
                 6 => Instruction::JumpIfFalse(c,b),
                 7 => Instruction::LessThan(c,b,a),
                 8 => Instruction::Equals(c,b,a),
+                9 => Instruction::AdjustRelativeBase(c),
                 _ => Instruction::Finish
             }
         }
@@ -184,26 +217,18 @@ mod instruction {
 
     #[derive(Clone,Copy,Debug)]
     pub enum VarType {
+        Position,
         Immediate,
-        Position
+        Relative
     }
 
     impl VarType {
         fn new(n: usize) -> VarType {
-            if n == 0 {
-                VarType::Position
-            } else {
-                VarType::Immediate
+            match n {
+                0 => VarType::Position,
+                1 => VarType::Immediate,
+                _ => VarType::Relative
             }
-        }
-        pub fn get_pos<'a>(&self, ns: &'a [i64], position: usize) -> Option<usize> {
-            match self {
-                VarType::Immediate => Some(position),
-                VarType::Position => ns.get(position).map(|&p| p as usize)
-            }
-        }
-        pub fn get_value<'a>(&self, ns: &'a [i64], position: usize) -> Option<i64> {
-            self.get_pos(ns, position).and_then(|p| ns.get(p)).map(|p| *p)
         }
     }
 
