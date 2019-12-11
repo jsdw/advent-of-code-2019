@@ -32,6 +32,7 @@ enum Day {
         image_height: usize
     },
     Day9(FileInput),
+    Day10(FileInput),
 }
 
 /// Days that take a file as input take one input arg:
@@ -87,6 +88,11 @@ fn day(day: Day) -> Result<(),Error> {
             let s = read(input)?;
             days::day09::part1(&s)?;
             days::day09::part2(&s)?;
+        },
+        Day10(FileInput { input }) => {
+            let s = read(input)?;
+            days::day10::part1(&s)?;
+            days::day10::part2(&s)?;
         },
     };
     Ok(())
