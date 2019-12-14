@@ -1,7 +1,6 @@
 use crate::error::Error;
 use std::collections::{ HashMap, HashSet };
 use std::f64::consts::{ FRAC_PI_2, PI };
-use std::io::Write;
 
 pub fn both_parts(input: &str) -> Result<(), Error> {
     let coords = parse_asteroid_coords(input);
@@ -11,7 +10,7 @@ pub fn both_parts(input: &str) -> Result<(), Error> {
     println!("Star 1: {} ({},{})", best_n, best_coords.0, best_coords.1);
 
     // Now, which coords are hit first by a laser?
-    let mut visible_from_best: Vec<_> = coords_encountered_by_laser(best_coords, &coords);
+    let visible_from_best: Vec<_> = coords_encountered_by_laser(best_coords, &coords);
     let t = visible_from_best[199];
     println!("Star 2: {}", t.0 * 100 + t.1);
 

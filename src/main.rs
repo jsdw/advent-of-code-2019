@@ -33,6 +33,7 @@ enum Day {
     },
     Day9(FileInput),
     Day10(FileInput),
+    Day11(FileInput),
 }
 
 /// Days that take a file as input take one input arg:
@@ -92,6 +93,10 @@ fn day(day: Day) -> Result<(),Error> {
         Day10(FileInput { input }) => {
             let s = read(input)?;
             days::day10::both_parts(&s)?;
+        },
+        Day11(FileInput { input }) => {
+            let s = read(input)?;
+            days::day11::both_parts(&s)?;
         },
     };
     Ok(())
