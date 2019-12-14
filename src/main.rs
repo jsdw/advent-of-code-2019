@@ -91,8 +91,7 @@ fn day(day: Day) -> Result<(),Error> {
         },
         Day10(FileInput { input }) => {
             let s = read(input)?;
-            days::day10::part1(&s)?;
-            days::day10::part2(&s)?;
+            days::day10::both_parts(&s)?;
         },
     };
     Ok(())

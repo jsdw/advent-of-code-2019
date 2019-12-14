@@ -1,35 +1,63 @@
 use crate::error::Error;
 use std::collections::{ HashMap, HashSet };
+use std::f64::consts::{ FRAC_PI_2, PI };
+use std::io::Write;
 
-pub fn part1(input: &str) -> Result<(), Error> {
+pub fn both_parts(input: &str) -> Result<(), Error> {
     let coords = parse_asteroid_coords(input);
+
+    // Where do we want our station?
     let (best_coords, best_n) = find_best_asteroid_for_station(&coords);
     println!("Star 1: {} ({},{})", best_n, best_coords.0, best_coords.1);
+
+    // Now, which coords are hit first by a laser?
+    let mut visible_from_best: Vec<_> = coords_encountered_by_laser(best_coords, &coords);
+    let t = visible_from_best[199];
+    println!("Star 2: {}", t.0 * 100 + t.1);
+
     Ok(())
 }
 
-pub fn part2(input: &str) -> Result<(), Error> {
-    Ok(())
+fn coords_encountered_by_laser((x,y): (i64,i64), coords: &HashSet<(i64,i64)>) -> Vec<(i64,i64)> {
+    let mut visible: Vec<_> = find_visible_asteroids_for((x,y), &coords).collect();
+    // sort by what will be hit first.
+    visible.sort_by(|&(x1,y1),&(x2,y2)| {
+        let (x1,y1) = (x1 - x, y1 - y);
+        let (x2,y2) = (x2 - x, y2 - y);
+        let a1 = angleish(x1,y1);
+        let a2 = angleish(x2,y2);
+        a1.partial_cmp(&a2).unwrap()
+    });
+    visible
+}
+
+fn angleish(x: i64, y: i64) -> f64 {
+    let atan = f64::atan2(y as f64,x as f64);
+    if atan < -FRAC_PI_2 {
+        atan + PI + PI
+    } else {
+        atan
+    }
 }
 
 fn find_best_asteroid_for_station(coords: &HashSet<(i64,i64)>) -> ((i64,i64),usize) {
     let mut visible_counts: HashMap<(i64,i64),usize> = HashMap::new();
-    for &(x,y) in coords {
-        let mut visible = 0;
-        for &(x2,y2) in coords {
-            // ignore self.
-            if x == x2 && y == y2 { continue }
-
-            // is this blocked by some other coords?
-            let is_blocked = get_coords_between((x,y), (x2,y2)).any(|(xf,yf)| coords.contains(&(xf,yf)));
-
-            // If not, count it as visible.
-            if !is_blocked { visible += 1 }
-        }
-        //println!("{},{}: {}", x, y, visible);
-        visible_counts.insert((x,y), visible);
+    for &xy in coords {
+        let visible = find_visible_asteroids_for(xy, coords).count();
+        visible_counts.insert(xy, visible);
     }
     visible_counts.into_iter().max_by_key(|(_,n)| *n).unwrap()
+}
+
+fn find_visible_asteroids_for<'a>((x,y): (i64,i64), coords: &'a HashSet<(i64,i64)>) -> impl Iterator<Item=(i64,i64)> + 'a {
+    coords.iter().filter_map(move |&(x2,y2)| {
+        // ignore self.
+        if x == x2 && y == y2 { return None }
+        // is this blocked by some other coords?
+        let is_blocked = get_coords_between((x,y), (x2,y2)).any(|(xf,yf)| coords.contains(&(xf,yf)));
+        // If not, count it as visible.
+        if is_blocked { None } else { Some((x2,y2)) }
+    })
 }
 
 fn get_coords_between((x1,y1): (i64,i64), (x2,y2): (i64,i64)) -> impl Iterator<Item=(i64,i64)> {
@@ -112,6 +140,55 @@ mod test {
             .#....####
             ",
             (5,8), 33),
+            ("
+            #.#...#.#.
+            .###....#.
+            .#....#...
+            ##.#.#.#.#
+            ....#.#.#.
+            .##..###.#
+            ..#...##..
+            ..##....##
+            ......#...
+            .####.###.
+            ",
+            (1,2), 35),
+            ("
+            .#..#..###
+            ####.###.#
+            ....###.#.
+            ..###.##.#
+            ##.##.#.#.
+            ....###..#
+            ..#.#..#.#
+            #..#.#.###
+            .##...##.#
+            .....#.#..
+            ",
+            (6,3), 41),
+            ("
+            .#..##.###...#######
+            ##.############..##.
+            .#.######.########.#
+            .###.#######.####.#.
+            #####.##.#.##.###.##
+            ..#####..#.#########
+            ####################
+            #.####....###.#.#.##
+            ##.#################
+            #####.##.###..####..
+            ..######..##.#######
+            ####.##.####...##..#
+            .#####..#.######.###
+            ##...#.##########...
+            #.##########.#######
+            .####.#.###.###.#.##
+            ....##.##.###..#####
+            .#.#.###########.###
+            #.#.#.#####.####.###
+            ###.##.####.##.#..##
+            ",
+            (11,13), 210)
         ];
 
         for (input, pos, n) in inputs {
