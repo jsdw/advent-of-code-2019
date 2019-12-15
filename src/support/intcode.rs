@@ -16,6 +16,7 @@ pub fn parse_intcode_ops(input: &str) -> Result<Vec<i64>,Error> {
 
 #[derive(Clone)]
 pub struct Intcode {
+    counter: usize,
     position: usize,
     relative_base: i64,
     ops: Ops
@@ -23,10 +24,22 @@ pub struct Intcode {
 
 impl Intcode {
     pub fn new(ops: Vec<i64>) -> Intcode {
-        Intcode { position: 0, relative_base: 0, ops: Ops::new(ops) }
+        Intcode { counter: 0, position: 0, relative_base: 0, ops: Ops::new(ops) }
     }
     pub fn get_op(&self, pos: usize) -> i64 {
         self.ops.get(pos)
+    }
+    pub fn provide_input(&mut self, input: ProvideInputValue) -> Result<(),Error> {
+        if input.provider.counter != self.counter {
+            return Err(err!("Input provided to intcode machine twice"))
+        }
+        self.ops.set(input.provider.pos, input.value);
+        self.set_position(self.position + 2);
+        Ok(())
+    }
+    fn set_position(&mut self, val: usize) {
+        self.position = val;
+        self.counter += 1;
     }
     pub fn step(&mut self) -> Result<Option<Outcome>,Error> {
         loop {
@@ -39,14 +52,14 @@ impl Intcode {
                     let b = self.get_value(b,2);
                     let a = self.get_pos(a,3);
                     self.ops.set(a, b + c);
-                    self.position += 4;
+                    self.set_position(self.position + 4);
                 },
                 Instruction::Mul(c,b,a) => {
                     let c = self.get_value(c,1);
                     let b = self.get_value(b,2);
                     let a = self.get_pos(a,3);
                     self.ops.set(a, b * c);
-                    self.position += 4;
+                    self.set_position(self.position + 4);
                 },
                 Instruction::Input(c) => {
                     let c = self.get_pos(c,1);
@@ -55,31 +68,31 @@ impl Intcode {
                     // without being given input, we'll be given another
                     // one on the next step to ask again.
                     break Ok(Some(Outcome::NeedsInput(ProvideInput {
-                        intcode: self,
+                        counter: self.counter,
                         pos: c
                     })))
                 },
                 Instruction::Output(c) => {
                     let c = self.get_value(c,1);
-                    self.position += 2;
+                    self.set_position(self.position + 2);
                     break Ok(Some(Outcome::Output(c)))
                 },
                 Instruction::JumpIfTrue(c,b) => {
                     let c = self.get_value(c,1);
                     if c != 0 {
                         let b = self.get_value(b,2);
-                        self.position = b as usize;
+                        self.set_position(b as usize);
                     } else {
-                        self.position += 3;
+                        self.set_position(self.position + 3);
                     }
                 },
                 Instruction::JumpIfFalse(c,b) => {
                     let c = self.get_value(c,1);
                     if c == 0 {
                         let b = self.get_value(b,2);
-                        self.position = b as usize;
+                        self.set_position(b as usize);
                     } else {
-                        self.position += 3;
+                        self.set_position(self.position + 3);
                     }
                 },
                 Instruction::LessThan(c,b,a) => {
@@ -87,19 +100,19 @@ impl Intcode {
                     let b = self.get_value(b,2);
                     let a = self.get_pos(a,3);
                     self.ops.set(a, if c < b { 1 } else { 0 });
-                    self.position += 4;
+                    self.set_position(self.position + 4);
                 },
                 Instruction::Equals(c,b,a) => {
                     let c = self.get_value(c,1);
                     let b = self.get_value(b,2);
                     let a = self.get_pos(a,3);
                     self.ops.set(a, if c == b { 1 } else { 0 });
-                    self.position += 4;
+                    self.set_position(self.position + 4);
                 },
                 Instruction::AdjustRelativeBase(c) => {
                     let c = self.get_value(c,1);
                     self.relative_base += c;
-                    self.position += 2;
+                    self.set_position(self.position + 2);
                 }
                 Instruction::Finish => {
                     break Ok(None)
@@ -124,24 +137,29 @@ impl Intcode {
 /// An outcome as a result of running a step of the Intcode
 /// interpreter. We stop because we either need input or
 /// have something to output.
-pub enum Outcome<'a> {
-    NeedsInput(ProvideInput<'a>),
+pub enum Outcome {
+    NeedsInput(ProvideInput),
     Output(i64)
 }
 
-/// Sometimes the interpreter will ask for input. It can
-/// be provided via this.
-pub struct ProvideInput<'a> {
-    intcode: &'a mut Intcode,
+/// This is handed back if the interpreter requires a value.
+/// Once given a value, it can be handed back to the interpreter
+/// to set the value. A value can only be provided exactly once.
+pub struct ProvideInput {
+    counter: usize,
     pos: usize
 }
-impl <'a> ProvideInput<'a> {
-    pub fn provide(self, value: i64) {
-        // Assign the value we asked for:
-        self.intcode.ops.set(self.pos, value);
-        // Finally, progress to the next instruction:
-        self.intcode.position += 2;
+impl ProvideInput {
+    pub fn value(self, value: i64) -> ProvideInputValue {
+        ProvideInputValue { provider: self, value }
     }
+}
+
+/// An input provider is turned into this when it's given a value.
+/// This can then be given back to the intcode machine to set the value.
+pub struct ProvideInputValue {
+    provider: ProvideInput,
+    value: i64
 }
 
 /// Storage for ops that grows as necessary.

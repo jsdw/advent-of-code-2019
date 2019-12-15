@@ -64,10 +64,10 @@ fn intcode_fn(mut intcode: Intcode, first_input: i64) -> impl FnMut(i64) -> Resu
             match outcome {
                 Outcome::NeedsInput(provider) => {
                     if !has_used_first_input {
-                        provider.provide(first_input);
+                        intcode.provide_input(provider.value(first_input))?;
                         has_used_first_input = true;
                     } else {
-                        provider.provide(next_input);
+                        intcode.provide_input(provider.value(next_input))?;
                     }
                 },
                 Outcome::Output(value) => {

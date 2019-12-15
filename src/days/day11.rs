@@ -63,7 +63,7 @@ fn run_robot(mut r: Robot, canvas: &mut HashMap<(i64,i64),Colour>) -> Result<(),
             },
             Outcome::ProvidePanelColour(p) => {
                 let c = canvas.get(&coords).map(|c| *c).unwrap_or(Colour::Black);
-                p.provide(c);
+                r.provide_input(p.value(c))?;
             }
         }
     }
@@ -105,7 +105,12 @@ impl Direction {
 pub mod robot {
 
     use crate::error::Error;
-    use crate::support::intcode::{ Intcode, ProvideInput as IntcodeProvideInput, Outcome as IntcodeOutcome};
+    use crate::support::intcode::{
+        Intcode,
+        ProvideInput as IntcodeProvideInput,
+        ProvideInputValue as IntcodeProvideInputValue,
+        Outcome as IntcodeOutcome
+    };
 
     #[derive(Clone)]
     pub struct Robot {
@@ -116,6 +121,9 @@ pub mod robot {
     impl Robot {
         pub fn new(ops: Vec<i64>) -> Robot {
             Robot { intcode: Intcode::new(ops), is_second_output: false }
+        }
+        pub fn provide_input(&mut self, value: ProvideInputValue) -> Result<(),Error> {
+            self.intcode.provide_input(value.0)
         }
         pub fn step(&mut self) -> Result<Option<Outcome>,Error> {
             if let Some(outcome) = self.intcode.step()? {
@@ -142,22 +150,25 @@ pub mod robot {
     }
 
     /// The robot can provide back these outcomes each step
-    pub enum Outcome<'a> {
+    pub enum Outcome {
         PaintPanel(Colour),
         Turn(Direction),
-        ProvidePanelColour(ProvideInput<'a>)
+        ProvidePanelColour(ProvideInput)
     }
 
     /// The robot can ask what colour panel it's over.
-    pub struct ProvideInput<'a>(IntcodeProvideInput<'a>);
-    impl <'a> ProvideInput<'a> {
-        pub fn provide(self, p: Colour) {
-            match p {
-                Colour::Black => self.0.provide(0),
-                Colour::White => self.0.provide(1)
-            }
+    pub struct ProvideInput(IntcodeProvideInput);
+
+    impl ProvideInput {
+        pub fn value(self, p: Colour) -> ProvideInputValue {
+            ProvideInputValue(match p {
+                Colour::Black => self.0.value(0),
+                Colour::White => self.0.value(1)
+            })
         }
     }
+
+    pub struct ProvideInputValue(IntcodeProvideInputValue);
 
     /// The robot can rutn either left or right.
     #[derive(Clone,Copy,PartialEq,Eq)]

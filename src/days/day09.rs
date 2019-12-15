@@ -17,7 +17,7 @@ pub fn run_with_input(ops: &str, input: i64) -> Result<i64, Error> {
     while let Some(outcome) = intcode.step()? {
         match outcome {
             Outcome::NeedsInput(provider) => {
-                provider.provide(input);
+                intcode.provide_input(provider.value(input))?;
             },
             Outcome::Output(val) => {
                 return Ok(val)
