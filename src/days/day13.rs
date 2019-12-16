@@ -58,6 +58,7 @@ pub fn both_parts(input: &str) -> Result<(), Error> {
     Ok(())
 }
 
+/// This module implements a game of breakout using the provided intcode ops
 pub mod breakout {
 
     use crate::error::Error;
@@ -88,15 +89,15 @@ pub mod breakout {
 
             match outcome {
                 IntcodeOutcome::Output(n1) => {
-                    let n2 = self.intcode.step()?;
-                    let n3 = self.intcode.step()?;
-                    let (n2,n3) = match (n2, n3) {
-                        (Some(IntcodeOutcome::Output(n1)), Some(IntcodeOutcome::Output(n2))) => {
-                            (n1,n2)
-                        },
-                        _ => {
-                            return Err(err!("Expected 3 output values in a row"))
-                        }
+                    let n2 = if let Some(IntcodeOutcome::Output(n2)) = self.intcode.step()? {
+                        n2
+                    } else {
+                        return Err(err!("Expected 3 output values in a row, but only got 1"))
+                    };
+                    let n3 = if let Some(IntcodeOutcome::Output(n3)) = self.intcode.step()? {
+                        n3
+                    } else {
+                        return Err(err!("Expected 3 output values in a row, but only got 2"))
                     };
 
                     if n1 == -1 && n2 == 0 {
@@ -116,13 +117,18 @@ pub mod breakout {
         }
     }
 
+    /// From running Breakout, we are either told to draw a tile,
+    /// provided a score, or asked for joystick input.
     pub enum Outcome {
         Draw { x: i64, y: i64, tile: Tile },
         Score(i64),
         MoveJoystick(ProvideInput)
     }
 
+    /// If we are asked to provide input, we pass a value to the
+    /// thing handed back (this) and then hand that back to BReakout.
     pub struct ProvideInput(IntcodeProvideInput);
+    pub struct ProvideInputValue(IntcodeProvideInputValue);
 
     impl ProvideInput {
         pub fn value(self, direction: Direction) -> ProvideInputValue {
@@ -134,8 +140,8 @@ pub mod breakout {
         }
     }
 
-    pub struct ProvideInputValue(IntcodeProvideInputValue);
 
+    /// What direction would we like to move the joystick?
     #[derive(Clone,Copy,Eq,PartialEq)]
     pub enum Direction {
         Left,
@@ -143,6 +149,7 @@ pub mod breakout {
         Neutral
     }
 
+    /// The type of tile to draw
     #[derive(Clone,Copy,Eq,PartialEq)]
     pub enum Tile {
         Empty,
