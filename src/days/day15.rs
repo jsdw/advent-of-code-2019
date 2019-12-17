@@ -10,7 +10,7 @@ pub fn both_parts(input: &str) -> Result<(), Error> {
     // Build a map of the area:
     let droid = Droid::new(ops);
     let map = build_map(droid)?;
-    print_map(&map);
+    print_map(&map)?;
 
     // Find the oxygen station and calculate the distance from droid to it:
     let station_coords = map
