@@ -20,7 +20,7 @@ fn stringify(input: &[i32], offset: usize, limit: usize) -> String {
 }
 
 fn phases(mut input: Vec<i32>, n: usize) -> Vec<i32> {
-    for i in 0..n {
+    for _ in 0..n {
         // println!("{:?}", input[0..50].iter().map(|&n| if n == 0 { '#' } else { ' ' }).collect::<Vec<_>>() );
         input = phase(&input);
     }
