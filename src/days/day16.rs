@@ -6,7 +6,7 @@ pub fn both_parts(input: &str) -> Result<(), Error> {
 
     println!("Star 1: {}", stringify(&phases(vals.clone(), 100), 0, 8));
 
-    println!("Star 2: {}", stringify(&phases(vals[0..10].repeat(10), 100), 0, 8));
+    // println!("Star 2: {}", stringify(&phases(vals[0..10].repeat(10), 100), 0, 8));
 
     // let more_vals = vals.repeat(10_000);
     // let skip: usize = stringify(&more_vals, 0, 7).parse().unwrap();
