@@ -20,7 +20,6 @@ fn stringify(input: &[i8], offset: usize, limit: usize) -> String {
 
 fn phases(mut input: Vec<i8>, n: usize) -> Vec<i8> {
     for i in 0..n {
-        println!("Phase {}", i);
         input = phase(&input);
     }
     input
