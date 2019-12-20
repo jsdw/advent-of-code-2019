@@ -1,5 +1,6 @@
 use crate::error::Error;
 use std::iter;
+use std::ops::Range;
 use rayon::prelude::*;
 
 pub fn both_parts(input: &str) -> Result<(), Error> {
@@ -19,36 +20,54 @@ fn stringify(input: &[i8], offset: usize, limit: usize) -> String {
 }
 
 fn phases(mut input: Vec<i8>, n: usize) -> Vec<i8> {
-    for i in 0..n {
+    for _ in 0..n {
         input = phase(&input);
     }
     input
 }
 
 fn phase(input: &[i8]) -> Vec<i8> {
-    (0..input.len()).into_par_iter().map(|n| {
-        let out: i32 = repeating_indexes(n, input).map(|(arr,r)| {
-            arr.into_iter().map(|&n| n as i32).sum::<i32>() * r
-        }).sum();
-        (out % 10).abs() as i8
+    let rolling_sums: Vec<i32> = rolling_sum_iter(input).collect();
+    let len = input.len();
+    (0..input.len()).into_par_iter().map(move |n| {
+        let mut sum = 0;
+        // Add all +1s:
+        repeating_plus_ranges(n, len).for_each(|r| { sum += rolling_sums[r.end] - rolling_sums[r.start]; });
+        // Minus all -1s:
+        repeating_minus_ranges(n, len).for_each(|r| { sum -= rolling_sums[r.end] - rolling_sums[r.start]; });
+        (sum % 10).abs() as i8
     }).collect()
 }
 
-/// Hand back windows of values and n's that they need multiplying with.
-/// Ignore ranges that need multiplying with 0 since they don't contribute.
-/// Added complexity as we have to skip the first of the repeating pattern.
-fn repeating_indexes(n: usize, input: &[i8]) -> impl Iterator<Item=(&[i8],i32)> {
-    let first_chunk = iter::once(&input[0..n]).zip(iter::repeat(&0));
-    let next_chunks = input[n..].chunks(n+1).zip([1,0,-1,0].into_iter().cycle());
-    first_chunk.chain(next_chunks).filter_map(move |(chunk,&n)| {
-        if n == 0 {
-            None
-        } else {
-            Some((chunk, n))
-        }
+fn rolling_sum_iter(input: &[i8]) -> impl Iterator<Item=i32> + '_ {
+    iter::once(0).chain(input.into_iter().scan(0, |state, &n| {
+        *state = *state + n as i32;
+        Some(*state)
+    }))
+}
+
+fn repeating_plus_ranges(n: usize, len: usize) -> impl Iterator<Item=Indexes> {
+    repeating_digit_ranges(n, 1, len)
+}
+
+fn repeating_minus_ranges(n: usize, len: usize) -> impl Iterator<Item=Indexes> {
+    repeating_digit_ranges(n, 3, len)
+}
+
+fn repeating_digit_ranges(n: usize, offset: usize, len: usize) -> impl Iterator<Item=Indexes> {
+    let n_plus_one = n + 1;
+    let mut curr = offset * n_plus_one - 1;
+    iter::from_fn(move || {
+        let last = (curr + n_plus_one).min(len);
+        if last <= curr { return None }
+        let out =  Range { start: curr, end: last };
+        curr = curr + n_plus_one * 4;
+        Some(out)
     })
 }
 
 fn parse_input(input: &str) -> Vec<i8> {
     input.trim().bytes().map(|b| (b - 48) as i8).collect()
 }
+
+type Indexes = Range<usize>;
