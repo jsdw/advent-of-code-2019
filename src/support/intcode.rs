@@ -23,6 +23,10 @@ pub struct Intcode {
 }
 
 impl Intcode {
+    pub fn from_str(input: &str) -> Result<Intcode,Error> {
+        let ops = parse_intcode_ops(input)?;
+        Ok(Intcode::new(ops))
+    }
     pub fn new(ops: Vec<i64>) -> Intcode {
         Intcode { counter: 0, position: 0, relative_base: 0, ops: Ops::new(ops) }
     }
