@@ -7,6 +7,7 @@ pub struct Uppercase<R> {
 }
 
 impl <R: Read> Uppercase<R> {
+    #[allow(unused)]
     pub fn new(reader: R) -> Uppercase<R> {
         Uppercase { reader }
     }
