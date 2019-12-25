@@ -1,5 +1,5 @@
 use crate::error::Error;
-use crate::support::{ Terminal, ReadIter, IntoReadIter };
+use crate::support::{ Terminal, IntoReadIter };
 use std::io::{ stdin, stdout, Read };
 
 // If interactive mode enabled, explore, pick things up, and find your

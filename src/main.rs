@@ -43,7 +43,12 @@ enum Day {
     Day18(FileInput),
     Day19(FileInput),
     Day20(FileInput),
-    Day21(FileInput),
+    Day21 {
+        #[structopt(name = "FILE", parse(from_os_str))]
+        input: PathBuf,
+        #[structopt(long, short, help = "Enable interactive springbot programming")]
+        interactive: bool
+    },
     Day22(FileInput),
     Day23(FileInput),
     Day24(FileInput),
@@ -153,9 +158,9 @@ fn day(day: Day) -> Result<(),Error> {
             let s = read(input)?;
             days::day20::both_parts(&s)?;
         },
-        Day21(FileInput { input }) => {
+        Day21 { input, interactive } => {
             let s = read(input)?;
-            days::day21::both_parts(&s)?;
+            days::day21::both_parts(&s, interactive)?;
         },
         Day22(FileInput { input }) => {
             let s = read(input)?;
