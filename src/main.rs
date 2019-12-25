@@ -47,6 +47,12 @@ enum Day {
     Day22(FileInput),
     Day23(FileInput),
     Day24(FileInput),
+    Day25 {
+        #[structopt(name = "FILE", parse(from_os_str))]
+        input: PathBuf,
+        #[structopt(long, short, help = "Enable interactive exploration in the terminal")]
+        interactive: bool
+    },
 }
 
 /// Days that take a file as input take one input arg:
@@ -162,6 +168,11 @@ fn day(day: Day) -> Result<(),Error> {
         Day24(FileInput { input }) => {
             let s = read(input)?;
             days::day24::both_parts(&s)?;
+        },
+        Day25 { input, interactive } => {
+            let s = read(input)?;
+            days::day25::part1(&s, interactive)?;
+            // There is no part 2.
         },
     };
     Ok(())
